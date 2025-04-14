@@ -1,0 +1,251 @@
+const express = require("express");
+const mysql = require("mysql");
+const multer = require("multer");
+const cors = require("cors");
+const bodyParser = require("body-parser");
+
+const app = express();
+const PORT = 5000;
+
+// ✅ Middleware
+app.use(cors());
+app.use(express.json());
+app.use(bodyParser.urlencoded({ extended: true }));
+app.use("/uploads", express.static("uploads"));
+
+// ✅ MySQL Database Connection
+const conn = mysql.createConnection({
+    host: "localhost",
+    user: "root",
+    password: "",
+    database: "e-commerce",
+});
+
+conn.connect((err) => {
+    if (err) {
+        console.error("Database connection failed:", err);
+        return;
+    }
+    console.log("✅ Database connected");
+});
+
+// ✅ Get All Products
+app.get("/products", (req, res) => {
+    conn.query("SELECT * FROM products", (err, results) => {
+        if (err) return res.status(500).json({ error: "Database error" });
+        res.json(results);
+    });
+});
+
+const storage = multer.diskStorage({
+    destination: "./uploads/",
+    filename: (req, file, cb) => {
+        cb(null, Date.now() + path.extname(file.originalname));
+    }
+});
+const upload = multer({ storage: storage });
+
+// // ✅ Get Single Product by ID
+// app.get("/products/:id", (req, res) => {
+//     const { id } = req.params;
+//     conn.query("SELECT * FROM products WHERE id = ?", [id], (err, results) => {
+//         if (err) return res.status(500).json({ error: "Database error" });
+//         if (results.length === 0) return res.status(404).json({ error: "Product not found" });
+//         res.json(results[0]);
+//     });
+// });
+
+
+// ✅ Insert New Product
+app.post("/products", (req, res) => {
+    const { name, description, price, discount_price, category, image } = req.body;
+    conn.query(
+        "INSERT INTO products (name, description, price, discount_price, category, image, date) VALUES (?, ?, ?, ?, ?, ?, NOW())",
+        [name, description, price, discount_price, category, image],
+        (err, result) => {
+            if (err) return res.status(500).json({ error: "Database error" });
+            res.json({ message: "Product added successfully", id: result.insertId });
+        }
+    );
+});
+
+// ✅ Update Product
+app.put("/products/:id", (req, res) => {
+    const { id } = req.params;
+    const { name, description, price, discount_price, category, image } = req.body;
+    conn.query(
+        "UPDATE products SET name=?, description=?, price=?, discount_price=?, category=?, image=? WHERE id=?",
+        [name, description, price, discount_price, category, image, id],
+        (err) => {
+            if (err) return res.status(500).json({ error: "Database error" });
+            res.json({ message: "Product updated successfully" });
+        }
+    );
+});
+
+// ✅ Delete Product
+app.delete("/products/:id", (req, res) => {
+    const { id } = req.params;
+    conn.query("DELETE FROM products WHERE id = ?", [id], (err) => {
+        if (err) return res.status(500).json({ error: "Database error" });
+        res.json({ message: "Product deleted successfully" });
+    });
+});
+
+// ✅ Start the Server
+app.listen(PORT, () => {
+    console.log(`🚀 Server running on http://localhost:${PORT}`);
+});
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+require("dotenv").config();
+const express = require("express");
+const cors = require("cors");
+const bodyParser = require("body-parser");
+require('./db')
+const authRoutes = require("./authRoutes"); // Import authentication routes
+const productRoutes = require("./productRoutes"); // Import product routes
+
+const app = express();
+const PORT = 5000;
+
+// ✅ Middleware
+app.use(cors());
+app.use(express.json());
+app.use(bodyParser.urlencoded({ extended: true }));
+app.use("/uploads", express.static("uploads"));
+
+// ✅ Routes
+app.use("/auth", authRoutes); // Register & Login routes
+app.use("/products", productRoutes); // Product management routes
+
+// ✅ Register Route
+// app.post("/auth/register", async (req, res) => {
+//     const { email, password, role } = req.body;
+    
+//     if (!email || !password || !role) {
+//         return res.status(400).json({ error: "All fields are required" });
+//     }
+
+//     const hashedPassword = await bcrypt.hash(password, 10);
+    
+//     const sql = "INSERT INTO users (email, password, role) VALUES (?, ?, ?)";
+//     conn.query(sql, [email, hashedPassword, role], (err, result) => {
+//         if (err) return res.status(500).json({ error: "Database error" });
+//         res.json({ message: "User registered successfully", id: result.insertId });
+//     });
+// });
+
+// // ✅ Login Route
+// app.post("/auth/login", (req, res) => {
+//     const { email, password } = req.body;
+    
+//     if (!email || !password) {
+//         return res.status(400).json({ error: "Email and password required" });
+//     }
+
+//     conn.query("SELECT * FROM users WHERE email = ?", [email], async (err, results) => {
+//         if (err) return res.status(500).json({ error: "Database error" });
+//         if (results.length === 0) return res.status(401).json({ error: "Invalid email or password" });
+
+//         const user = results[0];
+//         const isMatch = await bcrypt.compare(password, user.password);
+
+//         if (!isMatch) return res.status(401).json({ error: "Invalid email or password" });
+
+//         const token = jwt.sign({ id: user.id, role: user.role }, "your_secret_key", { expiresIn: "1h" });
+
+//         res.json({ message: "Login successful", token, role: user.role });
+//     });
+// });
+
+
+// ✅ Start the Server
+app.listen(PORT, () => {
+    console.log(`🚀 Server running on http://localhost:${PORT}`);
+});
+
+
+
+
+
+
+
+--------Register a New User
+Request: POST http://localhost:5000/api/auth/register
+Headers:
+Content-Type: application/json
+
+--------Login as Admin (Get Token)
+Request: POST http://localhost:5000/api/auth/login
+Headers:
+Content-Type: application/json
+
+--------Get All Products (Public Access)
+Request: GET http://localhost:5000/api/products/all
+get by type  http://localhost:5000/api/products/type/necklace
+
+--------Add a New Product (Admin Only)
+Request: POST http://localhost:5000/api/products/create
+Headers:
+Content-Type: application/json
+Authorization: Bearer your_jwt_token_here
+
+--------Update a Product (Admin Only)
+Request: PUT http://localhost:5000/api/products/update/:id
+Headers:
+Content-Type: application/json
+Authorization: Bearer your_jwt_token_here
+
+--------Delete a Product (Admin Only)
+Request: http://localhost:5000/api/products/delete/:id
+Headers:
+Authorization: Bearer your_jwt_token_here
+
+
+
+--------admin login
+{
+    "email": "admins@example.com",
+    "password": "admin1234"
+}
+
+--------customer login
+{
+    "email": "dhruvi@example.com",
+    "password": "dhruvi123",
+    "role": "customer"
+}
+
+---------customer register
+{
+  "name": "Sonawala Dhruvi",
+  "email": "dhruvisonawala@example.com",
+  "password": "123456",
+  "role": "customer"
+}
+
+----------add products
+{
+  "name": "Gift Box",
+  "description": "Beautiful silver ring",
+  "price": 1500,
+  "discount_price": 1200,
+  "category": "women",
+  "type": "gift box",
+  "date": "",
+  "image": "image_g.jpg"
+}

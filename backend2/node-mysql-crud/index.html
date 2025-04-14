@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Product CRUD</title>
+</head>
+<body>
+    <h1>Product CRUD Operations</h1>
+
+    <button onclick="getProducts()">Get Products</button>
+    <button onclick="addProduct()">Add Product</button>
+    <button onclick="updateProduct()">Update Product</button>
+    <button onclick="deleteProduct()">Delete Product</button>
+
+    <pre id="output"></pre>
+
+    <script>
+        const BASE_URL = "http://localhost:5000/products";
+        const TOKEN = "your_jwt_token_here";  // Replace with actual token after login
+
+        async function getProducts() {
+            const res = await fetch(BASE_URL);
+            const data = await res.json();
+            document.getElementById("output").textContent = JSON.stringify(data, null, 2);
+        }
+
+        async function addProduct() {
+            const res = await fetch(BASE_URL, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${TOKEN}`
+                },
+                body: JSON.stringify({
+                    name: "Gold Ring",
+                    description: "Pure Gold 24K",
+                    price: "15000",
+                    discount_price: "13000",
+                    category: "Jewelry",
+                    image: "/uploads/goldring.png"
+                })
+            });
+            const data = await res.json();
+            document.getElementById("output").textContent = JSON.stringify(data, null, 2);
+        }
+
+        async function updateProduct() {
+            const res = await fetch(`${BASE_URL}/2`, {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${TOKEN}`
+                },
+                body: JSON.stringify({
+                    name: "Updated Gold Ring",
+                    description: "New design",
+                    price: "16000",
+                    discount_price: "14000",
+                    category: "Jewelry",
+                    image: "/uploads/goldring.png"
+                })
+            });
+            const data = await res.json();
+            document.getElementById("output").textContent = JSON.stringify(data, null, 2);
+        }
+
+        async function deleteProduct() {
+            const res = await fetch(`${BASE_URL}/2`, {
+                method: "DELETE",
+                headers: {
+                    "Authorization": `Bearer ${TOKEN}`
+                }
+            });
+            const data = await res.json();
+            document.getElementById("output").textContent = JSON.stringify(data, null, 2);
+        }
+    </script>
+</body>
+</html>
