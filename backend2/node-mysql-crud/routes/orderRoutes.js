@@ -146,7 +146,7 @@ router.get('/:orderId', async (req, res) => {
     
     // Get order items
     const [items] = await db.execute(
-      `SELECT oi.*, p.name, p.image, p.price as original_price 
+      `SELECT oi.*, p.name, p.image, p.price 
        FROM order_items oi
        LEFT JOIN products p ON oi.product_id = p.id
        WHERE oi.order_id = ?`,

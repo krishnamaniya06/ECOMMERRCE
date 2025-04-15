@@ -14,6 +14,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { ToastContainer, toast } from 'react-toastify';
 import axios from 'axios';
 import 'react-toastify/dist/ReactToastify.css'; 
+import { useAuth } from "./AuthContext.jsx";
 
 const Navbar = () => {
   const { cart } = useCartStore(); 
@@ -25,6 +26,10 @@ const Navbar = () => {
   const recommendationsRef = useRef(null);
   const [wishlist, setWishlist] = useState([]);
   const [addedProducts, setAddedProducts] = useState(0);
+
+  // Add auth context
+  const auth = useAuth() || { currentUser: null, isAuthenticated: false };
+  const { isAuthenticated } = auth;
 
   // Fetch wishlist data
   useEffect(() => {
@@ -369,7 +374,7 @@ const Navbar = () => {
               </Tooltip>
               {/* User Icon with Tooltip for Login */}
               <Tooltip title="Account" arrow>
-                <Link to="/auth" className="text-white text-2xl">
+                <Link to={isAuthenticated ? "/useracc" : "/auth"} className="text-white text-2xl">
                   <User />
                 </Link>
               </Tooltip>

@@ -249,3 +249,34 @@ Authorization: Bearer your_jwt_token_here
   "date": "",
   "image": "image_g.jpg"
 }
+
+-- Add these SQL statements to your database to ensure the orders and order_items tables exist:
+
+-- Create orders table if it doesn't exist
+CREATE TABLE IF NOT EXISTS orders (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  customer_id VARCHAR(255) NOT NULL,
+  order_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  total_amount DECIMAL(10, 2) NOT NULL,
+  status ENUM('pending', 'processing', 'shipped', 'completed', 'cancelled') DEFAULT 'processing'
+);
+
+-- Create order_items table if it doesn't exist
+CREATE TABLE IF NOT EXISTS order_items (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  order_id INT NOT NULL,
+  product_id INT NOT NULL,
+  quantity INT NOT NULL,
+  price DECIMAL(10, 2) NOT NULL,
+  FOREIGN KEY (order_id) REFERENCES orders(id),
+  FOREIGN KEY (product_id) REFERENCES products(id)
+);
+
+-- Insert some test data
+INSERT INTO orders (customer_id, total_amount, status) 
+VALUES ('test@example.com', 1500.00, 'processing');
+
+SET @last_order_id = LAST_INSERT_ID();
+
+INSERT INTO order_items (order_id, product_id, quantity, price)
+SELECT @last_order_id, id, 1, discount_price FROM products LIMIT 3;

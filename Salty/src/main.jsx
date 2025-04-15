@@ -25,38 +25,43 @@ import AntiTarnishNecklaces from "./Components/Pages/AntiTarnishNecklaces.jsx";
 import WishlistPage from "./Components/WishlistPage.jsx";
 import ProductsByMaterial from "./Components/Pages/ProductsByMaterial.jsx";
 import ProductDetail from "./Components/Pages/ProductDetail.jsx"; 
+import { AuthProvider } from "./Components/AuthContext.jsx";
+import UserAcc from "./Components/Pages/UserAcc.jsx";
 
 
 createRoot(document.getElementById("root")).render(
   <StrictMode>
-    <FilterContextProvider>
-      <Router>
-        <Routes>
-          <Route path="/" element={<App />} />
-          <Route path="/content" element={<Content />} />
-          <Route path="/filter/:filterType" element={<FilterPage />} />
-          <Route path="/cart" element={<Cart />} />
-          <Route path="/auth" element={<Auth />} />
-          <Route path="/wishlist" element={<WishlistPage />} />
-          <Route path="/products/type/:type" element={<ProductsByType />} />
-          <Route path="/all-products" element={<AllProducts />} />
-          <Route path="/products/type/gift box" element={<GiftBoxProducts />} />
-          <Route path="/products/type/set of earrings" element={<SetOfEarringsProducts />} />
-          <Route path="/products/type/charms & pendants" element={<CharmsAndPendantsProducts />} />
-          <Route path="/products/type/body chains" element={<BodyChainProducts />} />
-          <Route path="/products/type/set of rings" element={<SetOfRingsProducts />} />
-          <Route path="/products/type/jewelry sets" element={<JewelrySetsProducts />} />
-          <Route path="/products/new-arrivals" element={<NewArrivalsPage />} />
-          <Route path="/products/gender/men" element={<MenCategoryPage />} />
-          <Route path="/products/gender/women" element={<WomenCategoryPage />} />
-          <Route path="/products/type/set of earrings" element={<ComboEarringsProducts />} />
-          <Route path="/products/type/anti-tarnish earrings" element={<AntiTarnishEarrings />} />
-          <Route path="/products/type/anti-tarnish necklaces" element={<AntiTarnishNecklaces />} />
-          <Route path="/products/material/:material" element={<ProductsByMaterial />} />
-          <Route path="/" element={<Content />} />
-          <Route path="/product/:id" element={<ProductDetail />} />
-        </Routes>
-      </Router>
-    </FilterContextProvider>
+    <AuthProvider>
+      <FilterContextProvider>
+        <Router>
+          <Routes>
+            <Route path="/" element={<App />} />
+            <Route path="/content" element={<Content />} />
+            <Route path="/filter/:filterType" element={<FilterPage />} />
+            <Route path="/cart" element={<Cart />} />
+            <Route path="/auth" element={<Auth />} />
+            <Route path="/useracc" element={<UserAcc />} />
+            <Route path="/wishlist" element={<WishlistPage />} />
+            <Route path="/products/type/:type" element={<ProductsByType />} />
+            <Route path="/all-products" element={<AllProducts />} />
+            <Route path="/products/type/gift box" element={<GiftBoxProducts />} />
+            <Route path="/products/type/set of earrings" element={<SetOfEarringsProducts />} />
+            <Route path="/products/type/charms & pendants" element={<CharmsAndPendantsProducts />} />
+            <Route path="/products/type/body chains" element={<BodyChainProducts />} />
+            <Route path="/products/type/set of rings" element={<SetOfRingsProducts />} />
+            <Route path="/products/type/jewelry sets" element={<JewelrySetsProducts />} />
+            <Route path="/products/new-arrivals" element={<NewArrivalsPage />} />
+            <Route path="/products/gender/men" element={<MenCategoryPage />} />
+            <Route path="/products/gender/women" element={<WomenCategoryPage />} />
+            <Route path="/products/type/set of earrings" element={<ComboEarringsProducts />} />
+            <Route path="/products/type/anti-tarnish earrings" element={<AntiTarnishEarrings />} />
+            <Route path="/products/type/anti-tarnish necklaces" element={<AntiTarnishNecklaces />} />
+            <Route path="/products/material/:material" element={<ProductsByMaterial />} />
+            <Route path="/" element={<Content />} />
+            <Route path="/product/:id" element={<ProductDetail />} />
+          </Routes>
+        </Router>
+      </FilterContextProvider>
+    </AuthProvider>
   </StrictMode>
 );
