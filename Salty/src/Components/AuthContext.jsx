@@ -12,61 +12,106 @@ export const useAuth = () => {
 export const AuthProvider = ({ children }) => {
   const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   // Configure axios to include credentials with every request
   axios.defaults.withCredentials = true;
 
-  // Check for existing session on component mount
-  useEffect(() => {
-    const checkAuthStatus = async () => {
-      const token = localStorage.getItem('token');
-      const userData = localStorage.getItem('user');
+  // Verify authentication status with the server
+  const verifyAuth = async (token) => {
+    if (!token) {
+      setIsAuthenticated(false);
+      setCurrentUser(null);
+      return false;
+    }
+    
+    try {
+      // Set authorization header
+      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      const response = await axios.get('http://localhost:5000/api/user-profile');
       
-      if (token) {
-        // Set default authorization header for all requests
-        axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-        
-        if (userData) {
-          setCurrentUser(JSON.parse(userData));
-        } else {
-          // If we have token but no user data, try to get user profile
-          try {
-            const response = await axios.get('http://localhost:5000/api/user-profile');
-            if (response.data && response.data.user) {
-              setCurrentUser(response.data.user);
-              localStorage.setItem('user', JSON.stringify(response.data.user));
-            }
-          } catch (error) {
-            // If token is invalid, clear everything
-            localStorage.removeItem('token');
-            delete axios.defaults.headers.common['Authorization'];
-          }
-        }
+      if (response.data && response.data.user) {
+        setCurrentUser(response.data.user);
+        localStorage.setItem('user', JSON.stringify(response.data.user));
+        setIsAuthenticated(true);
+        return true;
       }
+      return false;
+    } catch (error) {
+      console.error('Auth verification failed:', error);
+      // Clear invalid tokens
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      delete axios.defaults.headers.common['Authorization'];
+      setIsAuthenticated(false);
+      setCurrentUser(null);
+      return false;
+    }
+  };
+
+  // Function to check auth status - can be called from any component
+  const checkAuthStatus = async (forceCheck = false) => {
+    const token = localStorage.getItem('token');
+    const userData = localStorage.getItem('user');
+    
+    // If we already have user data and not forcing a check
+    if (!forceCheck && currentUser && isAuthenticated) {
+      return true;
+    }
+    
+    if (token) {
+      // Set default authorization header for all requests
+      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
       
+      if (userData && !forceCheck) {
+        const user = JSON.parse(userData);
+        setCurrentUser(user);
+        setIsAuthenticated(true);
+        return true;
+      } else {
+        // Verify token with server
+        return await verifyAuth(token);
+      }
+    } else {
+      setIsAuthenticated(false);
+      setCurrentUser(null);
+      return false;
+    }
+  };
+
+  // Check auth status on component mount
+  useEffect(() => {
+    const initAuth = async () => {
+      await checkAuthStatus();
       setLoading(false);
     };
 
-    checkAuthStatus();
+    initAuth();
   }, []);
 
   // Login function
   const login = async (email, password) => {
-    const response = await axios.post('http://localhost:5000/login', {
-      email,
-      password
-    });
-    
-    const { token, user } = response.data;
-    
-    if (token) {
-      localStorage.setItem('token', token);
-      localStorage.setItem('user', JSON.stringify(user));
-      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-      setCurrentUser(user);
+    try {
+      const response = await axios.post('http://localhost:5000/login', {
+        email,
+        password
+      });
+      
+      const { token, user } = response.data;
+      
+      if (token) {
+        localStorage.setItem('token', token);
+        localStorage.setItem('user', JSON.stringify(user));
+        axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+        setCurrentUser(user);
+        setIsAuthenticated(true);
+      }
+      
+      return response;
+    } catch (error) {
+      console.error('Login error:', error);
+      throw error;
     }
-    
-    return response;
   };
 
   // Logout function
@@ -80,6 +125,7 @@ export const AuthProvider = ({ children }) => {
       localStorage.removeItem('user');
       delete axios.defaults.headers.common['Authorization'];
       setCurrentUser(null);
+      setIsAuthenticated(false);
     }
   };
 
@@ -88,7 +134,8 @@ export const AuthProvider = ({ children }) => {
     currentUser,
     login,
     logout,
-    isAuthenticated: !!currentUser
+    isAuthenticated,
+    checkAuthStatus
   };
 
   return (

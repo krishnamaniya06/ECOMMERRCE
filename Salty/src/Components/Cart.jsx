@@ -1,71 +1,47 @@
 import React, { useState, useEffect } from "react";
 import useCartStore from "./cartStore";
 import { useAuth } from "./AuthContext.jsx";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import Navbar from "./Navbar.jsx";
-import axios from "axios";
 
 const Cart = () => {
+  const navigate = useNavigate();
   const { cart, removeFromCart, clearCart, updateCartItem, checkout, loading, orderSuccess, error, resetOrderStatus } = useCartStore();
   const [customerId, setCustomerId] = useState('');
-  const [localAuthState, setLocalAuthState] = useState({
-    isAuthenticated: false,
-    currentUser: null
-  });
+  const [authLoaded, setAuthLoaded] = useState(false);
   
-  // Get authentication context
-  const authContext = useAuth();
+  // Get authentication context with the enhanced check function
+  const { currentUser, isAuthenticated, checkAuthStatus } = useAuth();
 
-  // Ensure authentication state is consistent, especially after page refresh
+  // Check auth status when component mounts
   useEffect(() => {
-    const checkAuthState = async () => {
-      // First, try to use the auth context
-      if (authContext && authContext.isAuthenticated && authContext.currentUser) {
-        setLocalAuthState({
-          isAuthenticated: true,
-          currentUser: authContext.currentUser
-        });
-        return;
-      }
-
-      // If auth context doesn't have the data, check localStorage and API
-      const token = localStorage.getItem('token');
-      if (token) {
-        try {
-          // Set authorization header
-          axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-          
-          // Verify the token with the server
-          const response = await axios.get('http://localhost:5000/api/user-profile');
-          if (response.data && response.data.user) {
-            setLocalAuthState({
-              isAuthenticated: true,
-              currentUser: response.data.user
-            });
-          }
-        } catch (error) {
-          console.error("Auth verification error:", error);
-          // Clear invalid token
-          localStorage.removeItem('token');
-          localStorage.removeItem('user');
-          delete axios.defaults.headers.common['Authorization'];
-          setLocalAuthState({
-            isAuthenticated: false,
-            currentUser: null
-          });
-        }
+    const verifyAuth = async () => {
+      try {
+        // Force a check with the server on component mount
+        await checkAuthStatus(true);
+        setAuthLoaded(true);
+      } catch (error) {
+        console.error("Auth verification failed in Cart:", error);
+        setAuthLoaded(true);
       }
     };
 
-    checkAuthState();
-  }, [authContext]);
+    verifyAuth();
+    
+    // Using an interval to periodically check auth status while on the cart page
+    const authInterval = setInterval(() => {
+      checkAuthStatus();
+    }, 60000); // Check every minute
+    
+    return () => {
+      clearInterval(authInterval);
+    };
+  }, [checkAuthStatus]);
 
-  // Use the combined auth state from both context and local check
-  const isAuthenticated = authContext?.isAuthenticated || localAuthState.isAuthenticated;
-  const currentUser = authContext?.currentUser || localAuthState.currentUser;
-
-  console.log("Current cart state:", cart); // Debugging line
-  console.log("Auth status:", isAuthenticated, currentUser); // Debugging line
+  // Debug information
+  useEffect(() => {
+    console.log("Auth state in Cart:", { isAuthenticated, currentUser });
+  }, [isAuthenticated, currentUser]);
 
   // Calculate total price for all items in the cart
   const getTotalPrice = () => {
@@ -74,8 +50,14 @@ const Cart = () => {
 
   const handleCheckout = async () => {
     if (!isAuthenticated) {
-      alert("Please log in to complete your purchase.");
-      return;
+      // Double-check auth status before showing the alert
+      const isAuth = await checkAuthStatus(true);
+      
+      if (!isAuth) {
+        alert("Please log in to complete your purchase.");
+        navigate("/auth");
+        return;
+      }
     }
     
     // If logged in, use the user's email as the customer ID
@@ -89,6 +71,18 @@ const Cart = () => {
       resetOrderStatus();
     };
   }, [resetOrderStatus]);
+
+  // If auth is still being verified, show a loading indicator
+  if (!authLoaded) {
+    return (
+      <div className="min-h-screen bg-amber-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-amber-700 border-r-transparent"></div>
+          <p className="mt-2 text-amber-800">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-amber-50">
@@ -128,7 +122,15 @@ const Cart = () => {
               {cart.map((item) => (
                 <div key={item.id} className="flex justify-between items-center p-3 border-b border-amber-100">
                   <div className="flex items-center">
-                    <img src={`http://localhost:5000${item.image}`} alt={item.name} className="w-16 h-16 object-cover rounded-md" />
+                    <img 
+                      src={`http://localhost:5000${item.image}`} 
+                      alt={item.name} 
+                      className="w-16 h-16 object-cover rounded-md"
+                      onError={(e) => {
+                        e.target.onerror = null;
+                        e.target.src = 'https://via.placeholder.com/64?text=Product';
+                      }}
+                    />
                     <div className="ml-4">
                       <span className="font-semibold text-amber-800">{item.name}</span>
                       <p className="text-amber-600">₹{(Number(item.discount_price) || 0).toFixed(2)} x {item.qty}</p>
